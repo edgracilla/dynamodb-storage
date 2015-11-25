@@ -1,0 +1,37 @@
+/* The config.json file is where you specify additional configuration needed by
+ * your plugin. The details you specify here will be translated to a form on the
+ * UI. The values supplied by the users will then get injected as options on the
+ * platform on ready event.
+ */
+{
+  "accessKeyId": {
+	"label": "Access Key ID",
+	"type": "String",
+	"required": true,
+	"help": "AWS Access Key ID."
+  },
+  "secretAccessKey": {
+	"label": "Secret Access Key",
+	"type": "String",
+	"required": true,
+	"help": "Matching Secret Access key for AWS Access Key ID."
+  },
+  "region": {
+	"label": "Region",
+	"type": "String",
+	"required": true,
+	"help": "Region where the Dynamo DB Table is location i.e. (us-west-2)."
+  },
+  "table": {
+	"label": "Table",
+	"type": "String",
+	"required": true,
+	"help": "DynamoDB Table."
+  },
+  "fields": {
+	"label": "Fields",
+	"type": "String",
+	"required": false,
+	"help": "(Optional) Data will be inserted as is if this is blank. List of the Table Fields/Columns. Input for this field is in JSON format {\"(field_name)\" : {\"source_field\" : \"value\"}}. field_name will be the name of the column in the MySQL Table, source_field (required) value will be the name of the field in the JSON Data passed to the plugin."
+  }
+}
