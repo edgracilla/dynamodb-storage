@@ -1,11 +1,9 @@
 'use strict';
 
-var platform = require('./platform'),
-	AWS     = require('aws-sdk'),
-	async   = require('async'),
-	isEmpty = require('lodash.isempty'),
+var platform          = require('./platform'),
+	async             = require('async'),
+	isEmpty           = require('lodash.isempty'),
 	docClient, params = {};
-
 
 /**
  * Emitted when device data is received. This is the event to listen to in order to get real-time data feed from the connected devices.
@@ -13,14 +11,13 @@ var platform = require('./platform'),
  */
 
 platform.on('data', function (data) {
-	// TODO: Insert the data to the database using the initialized connection.
 	var processedData = {};
 
-	var save = function() {
-		var itemParams  = {TableName : params.table, Item : {}};
+	var save = function () {
+		var itemParams = {TableName: params.table, Item: {}};
 		itemParams.Item = processedData;
 
-		docClient.put(itemParams, function(error, resp) {
+		docClient.put(itemParams, function (error) {
 			if (error) {
 				console.error('Error creating record on Elasticsearch', error);
 				platform.handleException(error);
@@ -34,7 +31,7 @@ platform.on('data', function (data) {
 	};
 
 	if (params.fields) {
-		async.forEachOf(params.fields, function(field, key, callback) {
+		async.forEachOf(params.fields, function (field, key, callback) {
 			var datum = data[field.source_field];
 			if (datum !== undefined && datum !== null) processedData[key] = datum;
 			callback();
@@ -43,25 +40,13 @@ platform.on('data', function (data) {
 		processedData = data;
 		save();
 	}
-
 });
 
 /**
  * Emitted when the platform shuts down the plugin. The Storage should perform cleanup of the resources on this event.
  */
 platform.once('close', function () {
-	var domain = require('domain');
-	var d = domain.create();
-
-	d.once('error', function(error) {
-		console.error(error);
-		platform.handleException(error);
-		platform.notifyClose();
-	});
-
-	d.run(function() {
-		platform.notifyClose(); // Notify the platform that resources have been released.
-	});
+	platform.notifyClose();
 });
 
 /**
@@ -70,8 +55,9 @@ platform.once('close', function () {
  * @param {object} options The options or configuration injected by the platform to the plugin.
  */
 platform.once('ready', function (options) {
+	var AWS = require('aws-sdk');
 
-	var init = function(e) {
+	var init = function (e) {
 
 		if (e) {
 			console.error('Error parsing JSON field configuration for DynamoDB.', e);
@@ -79,8 +65,8 @@ platform.once('ready', function (options) {
 		}
 
 		AWS.config.update({
-			accessKeyId     : options.accessKeyId,
-			secretAccessKey : options.secretAccessKey
+			accessKeyId: options.accessKeyId,
+			secretAccessKey: options.secretAccessKey
 		});
 
 		docClient = new AWS.DynamoDB.DocumentClient({region: options.region});
@@ -95,16 +81,14 @@ platform.once('ready', function (options) {
 		var parseFields = JSON.parse(options.fields);
 		params.fields = parseFields;
 
-		async.forEachOf(parseFields , function(field, key, callback) {
+		async.forEachOf(parseFields, function (field, key, callback) {
 
-			if (isEmpty(field.source_field)){
-				callback( new Error('Source field is missing for ' + field + ' in DynamoDB Plugin'));
+			if (isEmpty(field.source_field)) {
+				callback(new Error('Source field is missing for ' + field + ' in DynamoDB Plugin'));
 			} else
 				callback();
 		}, init);
 
-	} else {
+	} else
 		init(null);
-	}
-
 });
