@@ -1,7 +1,3 @@
-/*
- * Just a sample code to test the storage plugin.
- * Kindly write your own unit tests for your own plugin.
- */
 'use strict';
 
 var cp     = require('child_process'),
@@ -14,7 +10,7 @@ var ACCESSKEYID     = 'AKIAJNREAE4CIKEJVUWA',
 	SECRETACCESSKEY = 'tAvl7cOWRzZkV2J8o93nj2I9saXfUAaZCVGStl8J',
 	REGION          = 'us-west-2',
 	TABLE           = 'reekoh_table',
-	SORT_KEY  		= new Date().getTime();
+	SORT_KEY        = new Date().getTime();
 
 var record = {
 	partition_string_pk: 'PRIMARY_PARTITION_KEY',
@@ -59,22 +55,22 @@ describe('Storage', function () {
 			storage.send({
 				type: 'ready',
 				data: {
-					options : {
-						accessKeyId     : ACCESSKEYID,
-						secretAccessKey : SECRETACCESSKEY,
-						region          : REGION,
-						table           : TABLE,
-						fields          : JSON.stringify({
-												partition_string_pk: {source_field:'partition_string_pk'},
-												sort_number_pk: {source_field:'sort_number_pk'},
-												co2_field: {source_field: 'co2'},
-												temp_field: {source_field: 'temp'},
-												quality_field: {source_field: 'quality'},
-												reading_time_field: {source_field: 'reading_time'},
-												metadata_field: {source_field: 'metadata'},
-												random_data_field: {source_field: 'random_data'},
-												is_normal_field: {source_field: 'is_normal'}
-											})
+					options: {
+						accessKeyId: ACCESSKEYID,
+						secretAccessKey: SECRETACCESSKEY,
+						region: REGION,
+						table: TABLE,
+						fields: JSON.stringify({
+							partition_string_pk: {source_field: 'partition_string_pk'},
+							sort_number_pk: {source_field: 'sort_number_pk'},
+							co2_field: {source_field: 'co2'},
+							temp_field: {source_field: 'temp'},
+							quality_field: {source_field: 'quality'},
+							reading_time_field: {source_field: 'reading_time'},
+							metadata_field: {source_field: 'metadata'},
+							random_data_field: {source_field: 'random_data'},
+							is_normal_field: {source_field: 'is_normal'}
+						})
 					}
 				}
 			}, function (error) {
@@ -97,19 +93,20 @@ describe('Storage', function () {
 			this.timeout(10000);
 
 			AWS.config.update({
-				accessKeyId     : ACCESSKEYID,
-				secretAccessKey : SECRETACCESSKEY
+				accessKeyId: ACCESSKEYID,
+				secretAccessKey: SECRETACCESSKEY
 			});
 
 			var docClient = new AWS.DynamoDB.DocumentClient({region: REGION});
-			var searchParams  = {TableName : TABLE,
-						         Key : {
-									 	partition_string_pk : 'PRIMARY_PARTITION_KEY',
-									 	sort_number_pk: SORT_KEY
-									   }
-								};
+			var searchParams = {
+				TableName: TABLE,
+				Key: {
+					partition_string_pk: 'PRIMARY_PARTITION_KEY',
+					sort_number_pk: SORT_KEY
+				}
+			};
 
-			docClient.get(searchParams, function(err, data){
+			docClient.get(searchParams, function (err, data) {
 				assert.ifError(err);
 				should.exist(data.Item);
 				var resp = data.Item;

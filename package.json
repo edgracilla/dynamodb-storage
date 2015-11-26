@@ -14,8 +14,7 @@
   "dependencies": {
     "async": "^1.5.0",
     "aws-sdk": "^2.2.19",
-    "lodash.isempty": "^3.0.4",
-    "moment": "^2.10.6"
+    "lodash.isempty": "^3.0.4"
   },
   "devDependencies": {
     "gulp": "^3.9.0",
