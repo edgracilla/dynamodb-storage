@@ -11,10 +11,10 @@ var platform = require('./platform'),
  * Emitted when device data is received. This is the event to listen to in order to get real-time data feed from the connected devices.
  * @param {object} data The data coming from the device represented as JSON Object.
  */
+
 platform.on('data', function (data) {
 	// TODO: Insert the data to the database using the initialized connection.
 	var processedData = {};
-
 
 	var save = function() {
 		var itemParams  = {TableName : params.table, Item : {}};
@@ -57,12 +57,10 @@ platform.once('close', function () {
 		console.error(error);
 		platform.handleException(error);
 		platform.notifyClose();
-		d.exit();
 	});
 
 	d.run(function() {
 		platform.notifyClose(); // Notify the platform that resources have been released.
-		d.exit();
 	});
 });
 
