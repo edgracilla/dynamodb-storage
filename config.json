@@ -7,7 +7,7 @@
   },
   "secretAccessKey": {
 	"label": "Secret Access Key",
-	"type": "String",
+	"type": "Password",
 	"required": true,
 	"help": "Matching Secret Access key for AWS Access Key ID."
   },
