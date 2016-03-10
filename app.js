@@ -3,14 +3,11 @@
 var platform          = require('./platform'),
 	async             = require('async'),
 	isEmpty           = require('lodash.isempty'),
+	isArray = require('lodash.isarray'),
+	isPlainObject = require('lodash.isplainobject'),
 	docClient, params = {};
 
-/**
- * Emitted when device data is received. This is the event to listen to in order to get real-time data feed from the connected devices.
- * @param {object} data The data coming from the device represented as JSON Object.
- */
-
-platform.on('data', function (data) {
+let sendData = (data) => {
 	var processedData = {};
 
 	var save = function () {
@@ -40,6 +37,19 @@ platform.on('data', function (data) {
 		processedData = data;
 		save();
 	}
+};
+
+platform.on('data', function (data) {
+	if(isPlainObject(data)){
+		sendData(data);
+	}
+	else if(isArray(data)){
+		async.each(data, function(datum){
+			sendData(datum);
+		});
+	}
+	else
+		platform.handleException(new Error(`Invalid data received. Data must be a valid Array/JSON Object or a collection of objects. Data: ${data}`));
 });
 
 /**

@@ -6,11 +6,11 @@ var cp     = require('child_process'),
 	should = require('should'),
 	storage;
 
-var ACCESSKEYID     = 'AKIAJNREAE4CIKEJVUWA',
-	SECRETACCESSKEY = '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',
+var ACCESSKEYID     = 'AKIAIL4I7RNNSDFPBJBA',
+	SECRETACCESSKEY = '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',
 	REGION          = 'us-west-2',
 	TABLE           = 'reekoh_table',
-	SORT_KEY        = new Date().getTime();
+	SORT_KEY        = new Date().getTime().toString();
 
 var record = {
 	partition_string_pk: 'PRIMARY_PARTITION_KEY',
@@ -27,14 +27,17 @@ var record = {
 describe('Storage', function () {
 	this.slow(5000);
 
-	after('terminate child process', function () {
+	after('terminate child process', function (done) {
+		this.timeout(7000);
+
 		storage.send({
 			type: 'close'
 		});
 
 		setTimeout(function () {
 			storage.kill('SIGKILL');
-		}, 3000);
+			done();
+		}, 5000);
 	});
 
 	describe('#spawn', function () {
