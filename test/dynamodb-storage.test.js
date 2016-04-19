@@ -62,18 +62,7 @@ describe('Storage', function () {
 						accessKeyId: ACCESSKEYID,
 						secretAccessKey: SECRETACCESSKEY,
 						region: REGION,
-						table: TABLE,
-						fields: JSON.stringify({
-							partition_string_pk: {source_field: 'partition_string_pk'},
-							sort_number_pk: {source_field: 'sort_number_pk'},
-							co2_field: {source_field: 'co2'},
-							temp_field: {source_field: 'temp'},
-							quality_field: {source_field: 'quality'},
-							reading_time_field: {source_field: 'reading_time'},
-							metadata_field: {source_field: 'metadata'},
-							random_data_field: {source_field: 'random_data'},
-							is_normal_field: {source_field: 'is_normal'}
-						})
+						table: TABLE
 					}
 				}
 			}, function (error) {
@@ -114,16 +103,15 @@ describe('Storage', function () {
 				should.exist(data.Item);
 				var resp = data.Item;
 
-				should.equal(record.co2, resp.co2_field, 'Data validation failed. Field: co2');
-				should.equal(record.temp, resp.temp_field, 'Data validation failed. Field: temp');
-				should.equal(record.quality, resp.quality_field, 'Data validation failed. Field: quality');
-				should.equal(record.random_data, resp.random_data_field, 'Data validation failed. Field: random_data');
-				should.equal(record.reading_time, resp.reading_time_field, 'Data validation failed. Field: reading_time');
-				should.equal(record.metadata, resp.metadata_field, 'Data validation failed. Field: metadata');
-				should.equal(record.is_normal, resp.is_normal_field, 'Data validation failed. Field: is_normal');
+				should.equal(record.co2, resp.co2, 'Data validation failed. Field: co2');
+				should.equal(record.temp, resp.temp, 'Data validation failed. Field: temp');
+				should.equal(record.quality, resp.quality, 'Data validation failed. Field: quality');
+				should.equal(record.random_data, resp.random_data, 'Data validation failed. Field: random_data');
+				should.equal(record.reading_time, resp.reading_time, 'Data validation failed. Field: reading_time');
+				should.equal(record.metadata, resp.metadata, 'Data validation failed. Field: metadata');
+				should.equal(record.is_normal, resp.is_normal, 'Data validation failed. Field: is_normal');
 				done();
 			});
-
 		});
 	});
 

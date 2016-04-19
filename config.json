@@ -22,11 +22,5 @@
 	"type": "String",
 	"required": true,
 	"help": "DynamoDB Table."
-  },
-  "fields": {
-	"label": "Fields",
-	"type": "JSON",
-	"required": false,
-	"help": "(Optional) Data will be inserted as is if this is blank. List of the Table Fields/Columns. Input for this field is in JSON format {\"(field_name)\" : {\"source_field\" : \"value\"}}. field_name will be the name of the column in the MySQL Table, source_field (required) value will be the name of the field in the JSON Data passed to the plugin."
   }
 }
