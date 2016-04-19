@@ -1,51 +1,38 @@
 'use strict';
 
-var platform          = require('./platform'),
-	async             = require('async'),
-	isEmpty           = require('lodash.isempty'),
-	isArray = require('lodash.isarray'),
+var async         = require('async'),
+	isArray       = require('lodash.isarray'),
+	platform      = require('./platform'),
 	isPlainObject = require('lodash.isplainobject'),
-	docClient, params = {};
+	docClient, table;
 
-let sendData = (data) => {
-	var processedData = {};
+let sendData = function (data, callback) {
+	docClient.put({
+		TableName: table,
+		Item: data
+	}, (error, record) => {
+		if (!error) {
+			platform.log(JSON.stringify({
+				title: 'Record Successfully inserted to DynamoDB.',
+				data: record
+			}));
+		}
 
-	var save = function () {
-		var itemParams = {TableName: params.table, Item: {}};
-		itemParams.Item = processedData;
-
-		docClient.put(itemParams, function (error) {
-			if (error) {
-				console.error('Error creating record on Elasticsearch', error);
-				platform.handleException(error);
-			} else {
-				platform.log(JSON.stringify({
-					title: 'Record Successfully inserted to DynamoDB.',
-					data: processedData
-				}));
-			}
-		});
-	};
-
-	if (params.fields) {
-		async.forEachOf(params.fields, function (field, key, callback) {
-			var datum = data[field.source_field];
-			if (datum !== undefined && datum !== null) processedData[key] = datum;
-			callback();
-		}, save);
-	} else {
-		processedData = data;
-		save();
-	}
+		callback(error);
+	});
 };
 
 platform.on('data', function (data) {
-	if(isPlainObject(data)){
-		sendData(data);
+	if (isPlainObject(data)) {
+		sendData(data, (error) => {
+			if (error) platform.handleException(error);
+		});
 	}
-	else if(isArray(data)){
-		async.each(data, function(datum){
-			sendData(datum);
+	else if (isArray(data)) {
+		async.each(data, (datum, done) => {
+			sendData(datum, done);
+		}, (error) => {
+			if (error) platform.handleException(error);
 		});
 	}
 	else
@@ -67,38 +54,15 @@ platform.once('close', function () {
 platform.once('ready', function (options) {
 	var AWS = require('aws-sdk');
 
-	var init = function (e) {
+	AWS.config.update({
+		accessKeyId: options.accessKeyId,
+		secretAccessKey: options.secretAccessKey
+	});
 
-		if (e) {
-			console.error('Error parsing JSON field configuration for DynamoDB.', e);
-			return platform.handleException(e);
-		}
+	docClient = new AWS.DynamoDB.DocumentClient({region: options.region});
 
-		AWS.config.update({
-			accessKeyId: options.accessKeyId,
-			secretAccessKey: options.secretAccessKey
-		});
+	table = options.table;
 
-		docClient = new AWS.DynamoDB.DocumentClient({region: options.region});
-		params.table = options.table;
-
-		platform.log('DynamoDB plugin ready.');
-		platform.notifyReady();
-
-	};
-
-	if (options.fields) {
-		var parseFields = JSON.parse(options.fields);
-		params.fields = parseFields;
-
-		async.forEachOf(parseFields, function (field, key, callback) {
-
-			if (isEmpty(field.source_field)) {
-				callback(new Error('Source field is missing for ' + field + ' in DynamoDB Plugin'));
-			} else
-				callback();
-		}, init);
-
-	} else
-		init(null);
+	platform.log('DynamoDB plugin ready.');
+	platform.notifyReady();
 });
