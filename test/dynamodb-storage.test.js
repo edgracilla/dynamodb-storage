@@ -21,8 +21,7 @@ let conf = {
 const SORT_KEY = new Date().getTime().toString()
 
 let record = {
-  // partition_string_pk: 'PRIMARY_PARTITION_KEY',
-  PRIMARY_PARTITION_KEY: 'test-key',
+  partition_string_pk: 'PRIMARY_PARTITION_KEY',
   sort_number_pk: SORT_KEY,
   co2: '11%',
   temp: 23,
@@ -107,9 +106,8 @@ describe('Storage', function () {
       let searchParams = {
         TableName: conf.table,
         Key: {
-          // partition_string_pk: 'PRIMARY_PARTITION_KEY',
-          PRIMARY_PARTITION_KEY: 'test-key'
-          // sort_number_pk: SORT_KEY
+          partition_string_pk: 'PRIMARY_PARTITION_KEY',
+          sort_number_pk: SORT_KEY
         }
       }
 
