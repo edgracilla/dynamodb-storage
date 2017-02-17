@@ -1,118 +1,132 @@
-'use strict';
+/* global describe, it, before, after */
 
-var cp     = require('child_process'),
-	assert = require('assert'),
-	AWS    = require('aws-sdk'),
-	should = require('should'),
-	storage;
+'use strict'
 
-var ACCESSKEYID     = 'AKIAIL4I7RNNSDFPBJBA',
-	SECRETACCESSKEY = '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',
-	REGION          = 'us-west-2',
-	TABLE           = 'reekoh_table',
-	SORT_KEY        = new Date().getTime().toString();
+const amqp = require('amqplib')
+const cp = require('child_process')
+const should = require('should')
+const AWS = require('aws-sdk')
 
-var record = {
-	partition_string_pk: 'PRIMARY_PARTITION_KEY',
-	sort_number_pk: SORT_KEY,
-	co2: '11%',
-	temp: 23,
-	quality: 11.25,
-	reading_time: '2015-11-27T11:04:13.539Z',
-	metadata: '{"metadata_json": "reekoh metadata json"}',
-	random_data: 'abcdefg',
-	is_normal: true
-};
+let _storage = null
+let _channel = null
+let _conn = {}
+
+let conf = {
+  accessKeyId: 'AKIAIOM4O5GBVUBZQTLA',
+  secretAccessKey: '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',
+  region: 'us-west-2',
+  table: 'reekoh_table'
+}
+
+const SORT_KEY = new Date().getTime().toString()
+
+let record = {
+  // partition_string_pk: 'PRIMARY_PARTITION_KEY',
+  PRIMARY_PARTITION_KEY: 'test-key',
+  sort_number_pk: SORT_KEY,
+  co2: '11%',
+  temp: 23,
+  quality: 11.25,
+  reading_time: '2015-11-27T11:04:13.539Z',
+  metadata: '{"metadata_json": "reekoh metadata json"}',
+  random_data: 'abcdefg',
+  is_normal: true
+}
 
 describe('Storage', function () {
-	this.slow(5000);
+  this.slow(5000)
 
-	after('terminate child process', function (done) {
-		this.timeout(7000);
+  before('init', () => {
+    process.env.INPUT_PIPE = 'demo.pipe.storage'
+    process.env.BROKER = 'amqp://guest:guest@127.0.0.1/'
+    process.env.CONFIG = JSON.stringify(conf)
 
-		storage.send({
-			type: 'close'
-		});
+    amqp.connect(process.env.BROKER).then((conn) => {
+      _conn = conn
+      return conn.createChannel()
+    }).then((channel) => {
+      _channel = channel
+    }).catch((err) => {
+      console.log(err)
+    })
+  })
 
-		setTimeout(function () {
-			storage.kill('SIGKILL');
-			done();
-		}, 5000);
-	});
+  after('terminate child process', function (done) {
+    this.timeout(7000)
 
-	describe('#spawn', function () {
-		it('should spawn a child process', function () {
-			assert.ok(storage = cp.fork(process.cwd()), 'Child process not spawned.');
-		});
-	});
+    _storage.send({
+      type: 'close'
+    })
 
-	describe('#handShake', function () {
-		it('should notify the parent process when ready within 5 seconds', function (done) {
-			this.timeout(5000);
+    setTimeout(function () {
+      _storage.kill('SIGKILL')
+      done()
+    }, 5000)
+  })
 
-			storage.on('message', function (message) {
-				if (message.type === 'ready')
-					done();
-			});
+  describe('#spawn', function () {
+    it('should spawn a child process', function () {
+      should.ok(_storage = cp.fork(process.cwd()), 'Child process not spawned.')
+    })
+  })
 
-			storage.send({
-				type: 'ready',
-				data: {
-					options: {
-						accessKeyId: ACCESSKEYID,
-						secretAccessKey: SECRETACCESSKEY,
-						region: REGION,
-						table: TABLE
-					}
-				}
-			}, function (error) {
-				assert.ifError(error);
-			});
-		});
-	});
+  describe('#handShake', function () {
+    it('should notify the parent process when ready within 5 seconds', function (done) {
+      this.timeout(5000)
 
-	describe('#data', function () {
-		it('should process the data', function (done) {
-			storage.send({
-				type: 'data',
-				data: record
-			}, done);
-		});
-	});
+      _storage.on('message', function (message) {
+        if (message.type === 'ready') {
+          done()
+        }
+      })
+    })
+  })
 
-	describe('#data', function () {
-		it('should have inserted the data', function (done) {
-			this.timeout(10000);
+  describe('#data', function () {
+    it('should process the data', function (done) {
+      this.timeout(8000)
 
-			AWS.config.update({
-				accessKeyId: ACCESSKEYID,
-				secretAccessKey: SECRETACCESSKEY
-			});
+      _channel.sendToQueue(process.env.INPUT_PIPE, new Buffer(JSON.stringify(record)))
 
-			var docClient = new AWS.DynamoDB.DocumentClient({region: REGION});
-			var searchParams = {
-				TableName: TABLE,
-				Key: {
-					partition_string_pk: 'PRIMARY_PARTITION_KEY',
-					sort_number_pk: SORT_KEY
-				}
-			};
+      _storage.on('message', (msg) => {
+        if (msg.type === 'processed') done()
+      })
+    })
+  })
 
-			docClient.get(searchParams, function (err, data) {
-				assert.ifError(err);
-				should.exist(data.Item);
-				var resp = data.Item;
+  describe('#data', function () {
+    it('should have inserted the data', function (done) {
+      this.timeout(10000)
 
-				should.equal(record.co2, resp.co2, 'Data validation failed. Field: co2');
-				should.equal(record.temp, resp.temp, 'Data validation failed. Field: temp');
-				should.equal(record.quality, resp.quality, 'Data validation failed. Field: quality');
-				should.equal(record.random_data, resp.random_data, 'Data validation failed. Field: random_data');
-				should.equal(record.reading_time, resp.reading_time, 'Data validation failed. Field: reading_time');
-				should.equal(record.metadata, resp.metadata, 'Data validation failed. Field: metadata');
-				should.equal(record.is_normal, resp.is_normal, 'Data validation failed. Field: is_normal');
-				done();
-			});
-		});
-	});
+      AWS.config.update({
+        accessKeyId: conf.accessKeyId,
+        secretAccessKey: conf.secretAccessKey
+      })
 
-});
+      let docClient = new AWS.DynamoDB.DocumentClient({region: conf.region})
+      let searchParams = {
+        TableName: conf.table,
+        Key: {
+          // partition_string_pk: 'PRIMARY_PARTITION_KEY',
+          PRIMARY_PARTITION_KEY: 'test-key'
+          // sort_number_pk: SORT_KEY
+        }
+      }
+
+      docClient.get(searchParams, function (err, data) {
+        should.ifError(err)
+        should.exist(data.Item)
+        let resp = data.Item
+
+        should.equal(record.co2, resp.co2, 'Data validation failed. Field: co2')
+        should.equal(record.temp, resp.temp, 'Data validation failed. Field: temp')
+        should.equal(record.quality, resp.quality, 'Data validation failed. Field: quality')
+        should.equal(record.random_data, resp.random_data, 'Data validation failed. Field: random_data')
+        should.equal(record.reading_time, resp.reading_time, 'Data validation failed. Field: reading_time')
+        should.equal(record.metadata, resp.metadata, 'Data validation failed. Field: metadata')
+        should.equal(record.is_normal, resp.is_normal, 'Data validation failed. Field: is_normal')
+        done()
+      })
+    })
+  })
+})
