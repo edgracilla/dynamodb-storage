@@ -7,18 +7,20 @@ const cp = require('child_process')
 const should = require('should')
 const AWS = require('aws-sdk')
 
-let _storage = null
+const INPUT_PIPE = 'demo.pipe.storage'
+const BROKER = 'amqp://guest:guest@127.0.0.1/'
+const SORT_KEY = new Date().getTime().toString()
+
+let _app = null
+let _conn = null
 let _channel = null
-let _conn = {}
 
 let conf = {
-  accessKeyId: 'AKIAIOM4O5GBVUBZQTLA',
-  secretAccessKey: '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',
   region: 'us-west-2',
-  table: 'reekoh_table'
+  table: 'reekoh_table',
+  accessKeyId: 'AKIAIOM4O5GBVUBZQTLA',
+  secretAccessKey: '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'
 }
-
-const SORT_KEY = new Date().getTime().toString()
 
 let record = {
   partition_string_pk: 'PRIMARY_PARTITION_KEY',
@@ -32,15 +34,13 @@ let record = {
   is_normal: true
 }
 
-describe('Storage', function () {
-  this.slow(5000)
-
+describe('DynamoDB Storage', function () {
   before('init', () => {
-    process.env.INPUT_PIPE = 'demo.pipe.storage'
-    process.env.BROKER = 'amqp://guest:guest@127.0.0.1/'
+    process.env.BROKER = BROKER
+    process.env.INPUT_PIPE = INPUT_PIPE
     process.env.CONFIG = JSON.stringify(conf)
 
-    amqp.connect(process.env.BROKER).then((conn) => {
+    amqp.connect(BROKER).then((conn) => {
       _conn = conn
       return conn.createChannel()
     }).then((channel) => {
@@ -52,20 +52,20 @@ describe('Storage', function () {
 
   after('terminate child process', function (done) {
     this.timeout(7000)
-
-    _storage.send({
+    _conn.close()
+    _app.send({
       type: 'close'
     })
 
     setTimeout(function () {
-      _storage.kill('SIGKILL')
+      _app.kill('SIGKILL')
       done()
     }, 5000)
   })
 
   describe('#spawn', function () {
     it('should spawn a child process', function () {
-      should.ok(_storage = cp.fork(process.cwd()), 'Child process not spawned.')
+      should.ok(_app = cp.fork(process.cwd()), 'Child process not spawned.')
     })
   })
 
@@ -73,7 +73,7 @@ describe('Storage', function () {
     it('should notify the parent process when ready within 5 seconds', function (done) {
       this.timeout(5000)
 
-      _storage.on('message', function (message) {
+      _app.on('message', function (message) {
         if (message.type === 'ready') {
           done()
         }
@@ -85,9 +85,9 @@ describe('Storage', function () {
     it('should process the data', function (done) {
       this.timeout(8000)
 
-      _channel.sendToQueue(process.env.INPUT_PIPE, new Buffer(JSON.stringify(record)))
+      _channel.sendToQueue(INPUT_PIPE, new Buffer(JSON.stringify(record)))
 
-      _storage.on('message', (msg) => {
+      _app.on('message', (msg) => {
         if (msg.type === 'processed') done()
       })
     })

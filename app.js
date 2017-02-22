@@ -1,14 +1,13 @@
 'use strict'
 
 const reekoh = require('reekoh')
-const config = require('./config.js')
 const _plugin = new reekoh.plugins.Storage()
 
 const async = require('async')
 const isPlainObject = require('lodash.isplainobject')
 
-let docClient = null
 let table = null
+let docClient = null
 
 let sendData = (data, callback) => {
   docClient.put({
@@ -44,9 +43,6 @@ _plugin.on('data', (data) => {
 })
 
 _plugin.once('ready', () => {
-  let err = config.validate(_plugin.config)
-  if (err) return console.error('Config Validation Error: \n', err)
-
   let AWS = require('aws-sdk')
   let options = _plugin.config
 
