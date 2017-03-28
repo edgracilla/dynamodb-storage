@@ -3,7 +3,6 @@
 'use strict'
 
 const amqp = require('amqplib')
-const cp = require('child_process')
 const should = require('should')
 const AWS = require('aws-sdk')
 
@@ -35,6 +34,7 @@ let record = {
 }
 
 describe('DynamoDB Storage', function () {
+
   before('init', () => {
     process.env.BROKER = BROKER
     process.env.INPUT_PIPE = INPUT_PIPE
@@ -50,46 +50,23 @@ describe('DynamoDB Storage', function () {
     })
   })
 
-  after('terminate child process', function (done) {
-    this.timeout(7000)
+  after('terminate', function () {
     _conn.close()
-    _app.send({
-      type: 'close'
-    })
-
-    setTimeout(function () {
-      _app.kill('SIGKILL')
-      done()
-    }, 5000)
   })
 
-  describe('#spawn', function () {
-    it('should spawn a child process', function () {
-      should.ok(_app = cp.fork(process.cwd()), 'Child process not spawned.')
-    })
-  })
-
-  describe('#handShake', function () {
-    it('should notify the parent process when ready within 5 seconds', function (done) {
-      this.timeout(5000)
-
-      _app.on('message', function (message) {
-        if (message.type === 'ready') {
-          done()
-        }
-      })
+  describe('#start', function () {
+    it('should start the app', function (done) {
+      this.timeout(10000)
+      _app = require('../app')
+      _app.once('init', done)
     })
   })
 
   describe('#data', function () {
     it('should process the data', function (done) {
       this.timeout(8000)
-
       _channel.sendToQueue(INPUT_PIPE, new Buffer(JSON.stringify(record)))
-
-      _app.on('message', (msg) => {
-        if (msg.type === 'processed') done()
-      })
+      _app.on('processed', done)
     })
   })
 
