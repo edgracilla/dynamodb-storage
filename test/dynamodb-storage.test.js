@@ -17,8 +17,8 @@ let _channel = null
 let conf = {
   region: 'us-west-2',
   table: 'reekoh_table',
-  accessKeyId: 'AKIAIOM4O5GBVUBZQTLA',
-  secretAccessKey: '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'
+  accessKeyId: 'xxx',
+  secretAccessKey: 'xxx'
 }
 
 let record = {
